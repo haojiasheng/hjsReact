@@ -25,3 +25,5 @@ export function isBoolean(a) {
 export function isFunction(a) {
   return getType(a) === 'function';
 }
+
+console.log(1);
