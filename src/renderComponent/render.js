@@ -8,14 +8,14 @@ export function render(vnode, parentNode, oldDom) {
   diff(vnode, oldDom, parentNode, false, true);
 }
 
-export function createComponent(Ctor, props) {
+export function createComponent(Ctor, props, context) {
   const componentList = oldComponents[func.name], inst;
 
   if (Ctor.prototype && Ctor.prototype.render) {
-    inst = new Ctor(props);
-    Component.call(inst, props);
+    inst = new Ctor(props, context);
+    Component.call(inst, props, context);
   } else {
-    inst = new Component(props);
+    inst = new Component(props, context);
     inst.constructor = Ctor;
     inst.render = doRender;
   }
@@ -38,14 +38,15 @@ function doRender(props) {
 
 const items = [];
 
-export function queueRender(component, props, state) {
+export function queueRender(component, props, state, context) {
   if (!component._dirty) {
     component._dirty = true;
     warning(
       items.push({
         component,
         props,
-        state
+        state,
+        context,
       }) === 1, `请勿多次同时修改组件的状态`)
     Promise.resolve().then(reRender);
   } else {
@@ -57,9 +58,9 @@ function reRender() {
   let p, list = items;
   items = [];
   while (p = list.pop()) {
-    const {props, state, component} = p;
+    const {props, state, component, context} = p;
     if (p._dirty) {
-      renderComponent(component, props, state);
+      renderComponent(component, props, state, undefined, undefined, context);
     }
   }
 }

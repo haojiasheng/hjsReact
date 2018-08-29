@@ -7,9 +7,9 @@ import { handleNode } from '../vdom/handleComponent';
 const diffLeval = 0;
 
 
-export function diff(vnode, dom, parentNode, mountAll, componetRef) {//componetRef: 当在第一次渲染时被传入true。用于调用componentDidMount。
+export function diff(vnode, dom, parentNode, mountAll, componetRef, context) {//componetRef: 当在第一次渲染时被传入true。用于调用componentDidMount。
   ++diffLeval;
-  const ret = idiff(vnode, dom, mountAll, componetRef);
+  const ret = idiff(vnode, dom, mountAll, componetRef, context);
   if(parentNode) {
     parentNode.appendChild(ret);
   }
@@ -21,7 +21,7 @@ export function diff(vnode, dom, parentNode, mountAll, componetRef) {//componetR
   return ret;
 }
 
-function idiff(vnode, dom, mountAll, componetRef) {
+function idiff(vnode, dom, mountAll, componetRef, context) {
   let out = dom;
 
   if (isBoolean(vnode) || vnode === null || vnode === undefined){
@@ -45,7 +45,7 @@ function idiff(vnode, dom, mountAll, componetRef) {
   const vnodeName = vnode.name;
 
   if (isFunction(vnodeName)) {
-    return buildComponent(vnode, dom, mountAll);
+    return buildComponent(vnode, dom, mountAll, context);
   }
 
 }

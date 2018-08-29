@@ -7,7 +7,7 @@ import { isFunction } from 'util';
 
 
 //将vnode传入其中，获取vnode的dom
-export function buildComponent(vnode, dom, mountAll) {
+export function buildComponent(vnode, dom, mountAll, context) {
   let domComponent = dom && dom._component,
       Cst = vnode.nodeName,
       isDirectly = dom._componentConstructor === Cst,
@@ -18,7 +18,7 @@ export function buildComponent(vnode, dom, mountAll) {
     isOwner = domComponent.constructor === Cst;
   }
   if (domComponent && isOwner && !mountAll) {
-    setComponentProps(domComponent, SYNC_MOUNT, mountAll, props, domComponent.state);
+    setComponentProps(domComponent, SYNC_MOUNT, mountAll, props, domComponent.state, context);
     dom = domComponent.base;
   } else {
     if (domComponent) {
@@ -26,8 +26,8 @@ export function buildComponent(vnode, dom, mountAll) {
       dom = null;
     }
 
-    const inst = createComponent(Cst, props);
-    setComponentProps(inst, SYNC_MOUNT, mountAll, props, inst.state);
+    const inst = createComponent(Cst, props, context);
+    setComponentProps(inst, SYNC_MOUNT, mountAll, props, inst.state, context);
     dom = inst.base;
   }
 
@@ -35,7 +35,7 @@ export function buildComponent(vnode, dom, mountAll) {
 }
 
 //当修改props的时候运行这个函数。
-export function setComponentProps(component, mode, mountAll,  props, state,) {
+export function setComponentProps(component, mode, mountAll,  props, state, context) {
   warning(!component._disable, `请勿运行已经卸载或者正在运行的组件${component.constructor.name}, 否则会造成内存泄漏`, 'reference');
   component._disable = true;
 
@@ -50,22 +50,22 @@ export function setComponentProps(component, mode, mountAll,  props, state,) {
         component.componentWillMount();
       }
     } else if (isFunction(component.componentWillReceiveProps)) {
-      component.componentWillReceiveProps(props, state);
+      component.componentWillReceiveProps(props, context);
     }
   }
 
   component._disable = false;
 
   if (mode === SYNC_MOUNT) {
-    renderComponent(component, props, state, mode, mountAll,)
+    renderComponent(component, props, state, mode, mountAll, context)
   } else if (mode === ASYNC_MOUNT) {
-    queueRender(component, props, state);
+    queueRender(component, props, state, context);
   }
 }
 
 
 
-export function renderComponent(component, props = null, state = null, mode, mountAll) {
+export function renderComponent(component, props = null, state = null, mode, mountAll, context) {
   let preProps = component.props,
       preState = component.state,
       initBase = component.base || component.nextBase,
@@ -86,11 +86,11 @@ export function renderComponent(component, props = null, state = null, mode, mou
     } else if (!isFunction(component.constructor.getDerivedStateFromProps) && isFunction(component.componentWillUpdate)) {
       component.componentWillUpdate(props, state)
     }
+    component.nextBase = null;
+    component.props = props;
+    component.state = state;
+    component.context = context;
   }
-
-  component.nextBase = null;
-  component.props = props;
-  component.state = state;
 
   component._dirty = false;
   if (!skip) {

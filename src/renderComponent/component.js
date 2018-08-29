@@ -3,7 +3,7 @@ import { _callBack, mounts } from '../data';
 import { queueRender } from './render';
 
 export class Component {
-  constructor (props) {
+  constructor (props, context) {
     const that = this;
     let _dirty = true;
     Object.defineProperty(this, '_dirty', {
@@ -18,6 +18,7 @@ export class Component {
       }
     })
     this.props = props;
+    this.context = context;
     this.delayState = {};
   }
   render () {}
