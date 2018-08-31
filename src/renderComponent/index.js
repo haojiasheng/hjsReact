@@ -1,9 +1,11 @@
 import { getNodeProps } from '../vdom';
-import { SYNC_MOUNT, ASYNC_MOUNT, FORCE_MOUNT } from '../data';
-import { removeComponent } from '../vdom/handleComponent';
+import { SYNC_MOUNT, ASYNC_MOUNT, FORCE_MOUNT, NO_MOUNT, mounts } from '../data';
+import { removeComponent, collectComponent, handleNode } from '../vdom/handleComponent';
+import { diff, diffLeval } from './diff';
 import { createComponent, render, queueRender } from './render';
 import { warning } from '../utils';
 import { isFunction } from 'util';
+import { loopDidMount } from './component';
 
 
 //将vnode传入其中，获取vnode的dom
@@ -61,6 +63,8 @@ export function setComponentProps(component, mode, mountAll,  props, state, cont
   } else if (mode === ASYNC_MOUNT) {
     queueRender(component, props, state, context);
   }
+
+	if (component.__ref) component.__ref(component);//FIXME:这里还不知道有什么用处
 }
 
 
@@ -68,16 +72,21 @@ export function setComponentProps(component, mode, mountAll,  props, state, cont
 export function renderComponent(component, props = null, state = null, mode, mountAll, context) {
   let preProps = component.props,
       preState = component.state,
+      preContext = component.context,
       initBase = component.base || component.nextBase,
       isUpdate = component.base,
+      initialChildComponent = component._component,
       skip = false,
-      getDerivedStateFromPropsData, rendered;
+      getDerivedStateFromPropsData,
+      rendered, 
+      snapshot, 
+      inst,
+      cbase;
 
 
   if (isFunction(component.constructor.getDerivedStateFromProps)) {
     getDerivedStateFromPropsData = component.constructor.getDerivedStateFromProps(props, state);
     state = Object.assign((state || {}),getDerivedStateFromPropsData);
-    component.state = Object.assign((component.state || {}), getDerivedStateFromPropsData);
   }
   
   if (isUpdate) {
@@ -86,6 +95,7 @@ export function renderComponent(component, props = null, state = null, mode, mou
     } else if (!isFunction(component.constructor.getDerivedStateFromProps) && isFunction(component.componentWillUpdate)) {
       component.componentWillUpdate(props, state)
     }
+
     component.nextBase = null;
     component.props = props;
     component.state = state;
@@ -95,9 +105,89 @@ export function renderComponent(component, props = null, state = null, mode, mou
   component._dirty = false;
   if (!skip) {
     rendered = component.render();
-    if (isFunction(rendered)){
-      
+
+    if (isFunction(component.getChildContext)) {
+      context = Object.assign({}, context, component.getChildContext())
     }
+
+    if (isUpdate && isFunction(component.getSnapshotBeforeUpdate)) {
+      snapshot = component.getSnapshotBeforeUpdate(preProps, preState);
+    }
+
+    let childComponent = rendered && rendered.nodeName,
+        base = null,//放到页面上的base都存在这个变量
+        toUnmount;//不需要的组件，之后需要卸载的都存在这个变量
+    if (isFunction(childComponent)){
+      let childProps = getNodeProps(childComponent);
+      inst = initialChildComponent;
+      if (inst && inst.constructor === childComponent && inst.__key === childProps.key) {//如果组件返回的组件和之前组件返回的组件是一样的话，那就直接将原来的组件放到setComponentProps里跑一遍
+        setComponentProps(inst, SYNC_MOUNT, false, childProps, inst.state, context);
+      } else {
+        toUnmount = inst;
+
+        component._component = inst = createComponent(childComponent, childProps, context);
+        inst._parentComponent = component;
+        setComponentProps(inst, SYNC_MOUNT, false, childProps, inst.state, context);
+      }
+      base = inst.base;
+    } else {
+      cbase = initBase;
+
+      toUnmount = initialChildComponent;
+      if (toUnmount) {
+        cbase = component._component = null;
+      }
+
+      if (initBase || mode === SYNC_MOUNT) {
+        if (cbase) {
+          cbase._component = null;
+        }
+        base = diff(rendered, cbase, cbase && cbase.parentNode, mountAll || !isUpdate, false, context)
+      }
+    }
+
+    if (initBase && base !== initBase && inst !== initialChildComponent) {
+      const initBaseParent = initBase.parentNode;
+      if (initBaseParent && initBaseParent !== base) {
+        initBaseParent.replaceChild(base, initBase);
+        if (!toUnmount) {
+          handleNode(initBase);
+        }
+      }
+    }
+
+    if (toUnmount) {
+      removeComponent(toUnmount)
+    }
+  
+    component.base = base;
+  
+    if(base) {
+      let componentRef = component,
+          t = component;
+      while(t = component._parentComponent) {
+        (componentRef = t).base = base;
+      }
+      base._component = componentRef;
+      base._componentConstructor = componentRef.constructor
+    }
+  }
+
+  if (!isUpdate || mountAll) {
+    mounts.unshift(component);
+  } else if (!skip) {
+    if (isFunction(component.componentDidUpdate)) {
+      component.componentDidUpdate(preProps, preState, snapshot);
+    }
+  }
+
+  let cbk;
+  while (cbk = component.__rendercallBack.pop()) {
+    cbk.call(component);
+  }
+
+  if (!diffLeval) {
+    loopDidMount()
   }
 
 }
