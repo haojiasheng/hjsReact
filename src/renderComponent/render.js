@@ -1,23 +1,23 @@
 import {diff} from './diff';
 import { oldComponents } from '../data';
 import { Component } from './component';
-import { isArray, warning } from "../utils";
+import { isArray, warning, isClass } from "../utils";
 import { renderComponent } from './index';
 
 export function render(vnode, parentNode, oldDom) {
-  diff(vnode, oldDom, parentNode, false, true);
+  diff(vnode, oldDom, parentNode , false, true);
 }
 
 export function createComponent(Ctor, props, context) {
-  const componentList = oldComponents[func.name], inst;
+  let componentList = oldComponents[Ctor.name], inst;
 
-  if (Ctor.prototype && Ctor.prototype.render) {
+  if (isClass(Ctor) && (warning(Ctor.prototype.render, '组件必须要有render方法', 'TypeError'))) {
     inst = new Ctor(props, context);
-    Component.call(inst, props, context);
+    warning(inst instanceof Component, '必须继承Component类', 'TypeError');
   } else {
     inst = new Component(props, context);
     inst.constructor = Ctor;
-    inst.render = doRender;
+    inst.render = doRender.bind(inst, props, context);
   }
   
   if (isArray(componentList)) {
@@ -36,7 +36,7 @@ function doRender(props) {
   return this.constructor(props);
 }
 
-const items = [];
+let items = [];
 
 export function queueRender(component, props, state, context) {
   if (!component._dirty) {

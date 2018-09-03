@@ -1,8 +1,9 @@
 import { loopDidMount } from './component';
-import { isString, isNumber, isBoolean, isFunction } from '../utils';
+import { isString, isNumber, isBoolean, isFunction, isObject, warning } from '../utils';
 import { buildComponent } from './index';
-import { ATTR_KEY } from '../data'
+import { ATTR_KEY, IS_NON_DIMENSIONAL } from '../data'
 import { handleNode, removeNode } from '../vdom/handleComponent';
+import { setAttribute } from './setAttribute';
 
 export let diffLeval = 0;
 
@@ -11,6 +12,7 @@ export function diff(vnode, dom, parentNode, mountAll, componetRef, context) {//
   ++diffLeval;
   const ret = idiff(vnode, dom, mountAll, componetRef, context);
   if (parentNode && parentNode !== ret.parentNode) {
+    console.log(ret)
     parentNode.appendChild(ret);
   }
   if (!--diffLeval) {
@@ -42,14 +44,14 @@ function idiff(vnode, dom, mountAll, componetRef, context) {
     return out;
   }
 
-  const vnodeName = vnode.name;
+  const vnodeName = vnode.nodeName;
 
   if (isFunction(vnodeName)) {
     return buildComponent(vnode, dom, mountAll, context);
   }
 
   if (!dom || !isSameNode(dom, vnodeName)) {
-    out = createNode(dom);
+    out = createNode(vnodeName);
     if (dom) {
       let fstC;
       const parentNode = dom.parentNode;
@@ -59,8 +61,8 @@ function idiff(vnode, dom, mountAll, componetRef, context) {
       if (parentNode) {
         parentNode.replaceChild(out, dom);
       }
+      handleNode(dom);
     }
-    handleNode(dom);
   }
 
   let fc = out.firstChild,
@@ -71,48 +73,44 @@ function idiff(vnode, dom, mountAll, componetRef, context) {
     props = out[ATTR_KEY] = {};
     const attributes = out.attributes;
     for (let i = attributes.length; i--;) {
-      props[attributes[i].name] = attributes[i].value;
+      props[attributes[i].name] = attributes[i].value;//普通元素的props和组件的props是不一样的，组件的单纯的传数据。而普通元素的props则是元素的属性
     }
   }
 
-  if (vnodeChild.length === 1 && isString(vnodeChild[0]) && fc.splitText !== undefined && !fc.nextSibling) {
+  if (vnodeChild.length === 1 && isString(vnodeChild[0]) && fc && fc.splitText !== undefined && !fc.nextSibling) {
     fc.nodeValue = vnodeChild[0];
   } else if (vnodeChild.length || fc) {
     innerDiffNode(vnodeChild, out, mountAll, componetRef, context);
   }
-  diffAttributes(out,props, vnode.attributes);
+  diffAttributes(out, props, vnode.attributes);
+
+  return out;
 
 }
 
 
 function diffAttributes(dom, preAttr, attr) {
   for (const name in preAttr) {
-    if (preAttr.hasOwnProperty(name)) {
-      if (!attr[name]) {
-        setAttribute(dom, name, preAttr[name], undefined);
-      }
+    if (preAttr.hasOwnProperty(name) && !attr[name]) {
+      setAttribute(dom, name, preAttr[name], undefined);
     }
   }
 
   for (const name in attr) {
-    if (preAttr.hasOwnProperty(name) && name !== 'innerHTML' && name !== 'children') {//FIXME:写到这里，这里后面还有要写的
+    if (attr.hasOwnProperty(name) && name !== 'innerHTML' && name !== 'children') {
       setAttribute(dom, name, preAttr[name], attr[name]);
     }
   }
 }
 
-function setAttribute(dom, name, oldVal, val) {
-
-}
-
 function innerDiffNode(vnodeChild, dom, mountAll, componetRef, context) {
   let keyObj = {},
     noKeyLen = 0,
-    domChilds = dom.childrenNodes,
+    domChilds = dom.childNodes || [],
     noKeyObj = {},
     min = 0,
-    child = null;
-  vnodeChildLen = vnodeChild.length;//用于循环vnodeChild计数
+    child = null,
+    vnodeChildLen = vnodeChild.length;//用于循环vnodeChild计数
 
   for (const domChild of domChilds) {
     const props = domChild[ATTR_KEY];
@@ -149,12 +147,12 @@ function innerDiffNode(vnodeChild, dom, mountAll, componetRef, context) {
       }
     }
 
-    child = diff(vChild, child, mountAll, componetRef, context)
+    child = idiff(vChild, child, mountAll, componetRef, context)
 
     const c = domChilds[i]
     if (child && child !== c && child !== dom) {
       if (!c) {
-        dom.appendChild(c);
+        dom.appendChild(child);
       } else if (c.nextSibling === child) {
         removeNode(c);//FIXME:这里可以不用删除c，个人认为将child放到c前面就可以了
       } else {

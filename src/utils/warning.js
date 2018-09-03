@@ -7,5 +7,7 @@ export function warning(boolean, message, type) {
     } else {
       throw new Error(message);
     }
+  } else {
+    return true;
   }
 }

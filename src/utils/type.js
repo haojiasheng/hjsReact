@@ -25,3 +25,7 @@ export function isBoolean(a) {
 export function isFunction(a) {
   return getType(a) === 'function';
 }
+
+export function isClass(a) {
+  return Object.toString.call(a).indexOf('class') !== -1;
+}

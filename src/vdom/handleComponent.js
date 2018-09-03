@@ -60,7 +60,7 @@ export function collectComponent(component) {
   const name = component.constructor.name;
   const sameComponents = oldComponents[name];
   if (sameComponents) {
-    for (const i = 0; i < sameComponents.length; i++) {
+    for (let i = 0; i < sameComponents.length; i++) {
       if (sameComponents[i].constructor === component.constructor) {
         sameComponents[i] = component;
         return;

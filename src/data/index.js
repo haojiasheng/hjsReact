@@ -11,3 +11,5 @@ export const ASYNC_MOUNT = Symbol('async run component mount');//异步渲染组
 export const FORCE_MOUNT = Symbol('force run component mount');//强制更新
 
 export const NO_MOUNT = Symbol('no run component mount');//不更新
+
+export const IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;//这些是css名称，如果css名称包含了这些字符，那值就可以是数字。

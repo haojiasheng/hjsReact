@@ -1,8 +1,8 @@
-import babel from '_rollup-plugin-babel@3.0.7@rollup-plugin-babel';
-import resolve from '_rollup-plugin-node-resolve@3.3.0@rollup-plugin-node-resolve';
-import commonjs from '_rollup-plugin-commonjs@9.1.5@rollup-plugin-commonjs';
-import json from '../../../../../Library/Caches/typescript/2.9/node_modules/@types/rollup-plugin-json';
-import uglify from '_rollup-plugin-uglify@4.0.0@rollup-plugin-uglify';
+import babel from 'rollup-plugin-babel';
+import resolve from 'rollup-plugin-node-resolve';
+import commonjs from 'rollup-plugin-commonjs';
+import json from 'rollup-plugin-json';
+import uglify from 'rollup-plugin-uglify';
 
 export default {
   input: './src/hjsReact.js',

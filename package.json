@@ -1,5 +1,5 @@
 {
-  "name": "y",
+  "name": "hjsReact",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -43,7 +43,7 @@
     "rollup-plugin-uglify": "^4.0.0",
     "sinon": "^6.1.5",
     "sinon-chai": "^3.2.0",
-    "webpack": "^4.16.5"
+    "webpack": "^4.3.0"
   },
   "eslintConfig": {
     "extends": "./config/eslint-config.js"

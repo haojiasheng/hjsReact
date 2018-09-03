@@ -12,7 +12,7 @@ import { loopDidMount } from './component';
 export function buildComponent(vnode, dom, mountAll, context) {
   let domComponent = dom && dom._component,
       Cst = vnode.nodeName,
-      isDirectly = dom._componentConstructor === Cst,
+      isDirectly = dom && dom._componentConstructor === Cst,
       isOwner = isDirectly,
       props = getNodeProps(vnode);
 
@@ -37,7 +37,7 @@ export function buildComponent(vnode, dom, mountAll, context) {
 }
 
 //当修改props的时候运行这个函数。
-export function setComponentProps(component, mode, mountAll,  props, state, context) {
+export function setComponentProps(component, mode, mountAll,  props = {}, state, context) {
   warning(!component._disable, `请勿运行已经卸载或者正在运行的组件${component.constructor.name}, 否则会造成内存泄漏`, 'reference');
   component._disable = true;
 
@@ -69,7 +69,7 @@ export function setComponentProps(component, mode, mountAll,  props, state, cont
 
 
 
-export function renderComponent(component, props = null, state = null, mode, mountAll, context) {
+export function renderComponent(component, props = {}, state = null, mode, mountAll, context) {
   let preProps = component.props,
       preState = component.state,
       preContext = component.context,
@@ -105,6 +105,7 @@ export function renderComponent(component, props = null, state = null, mode, mou
   component._dirty = false;
   if (!skip) {
     rendered = component.render();
+    warning(rendered !== undefined, 'render函数必须返回一些内容或者false或者null');//FIXME:在运行之前就判断出是否继承了Component
 
     if (isFunction(component.getChildContext)) {
       context = Object.assign({}, context, component.getChildContext())
@@ -118,7 +119,7 @@ export function renderComponent(component, props = null, state = null, mode, mou
         base = null,//放到页面上的base都存在这个变量
         toUnmount;//不需要的组件，之后需要卸载的都存在这个变量
     if (isFunction(childComponent)){
-      let childProps = getNodeProps(childComponent);
+      let childProps = getNodeProps(rendered);
       inst = initialChildComponent;
       if (inst && inst.constructor === childComponent && inst.__key === childProps.key) {//如果组件返回的组件和之前组件返回的组件是一样的话，那就直接将原来的组件放到setComponentProps里跑一遍
         setComponentProps(inst, SYNC_MOUNT, false, childProps, inst.state, context);
@@ -161,6 +162,7 @@ export function renderComponent(component, props = null, state = null, mode, mou
     }
   
     component.base = base;
+    console.log(base)
   
     if(base) {
       let componentRef = component,

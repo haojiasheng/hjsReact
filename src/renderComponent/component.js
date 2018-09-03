@@ -1,4 +1,4 @@
-import { isObject, isFunction, warning } from '../utils/type';
+import { isObject, isFunction, warning } from '../utils';
 import { mounts } from '../data';
 import { queueRender } from './render';
 
@@ -34,7 +34,7 @@ export class Component {
     } else {
       s = state;
     }
-    s = Object.assign((this.state || {}), s);
+    s = Object.assign((this.state || {}), s); 
     queueRender(this, this.props, s, this.context);
   }
 }

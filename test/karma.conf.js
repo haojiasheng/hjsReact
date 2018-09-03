@@ -1,5 +1,5 @@
 // Karma configuration
-// Generated on Wed Aug 15 2018 18:11:13 GMT+0800 (CST)
+// Generated on Mon Sep 03 2018 15:04:48 GMT+0800 (中国标准时间)
 
 module.exports = function(config) {
   config.set({
@@ -15,7 +15,7 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      'run/*.js'
+      'run/index.js'
     ],
 
 
@@ -27,7 +27,7 @@ module.exports = function(config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      'run/*.js': ['webpack']
+      'run/*.js': ['babel', 'webpack'],
     },
     webpack: {
       mode: 'development',
@@ -45,9 +45,7 @@ module.exports = function(config) {
         },]
       },
     },
-
-
-		webpackMiddleware: {
+    webpackMiddleware: {
 			noInfo: true
 		},
 
@@ -87,5 +85,5 @@ module.exports = function(config) {
     // Concurrency level
     // how many browser should be started simultaneous
     concurrency: Infinity
-  });
-};
+  })
+}
