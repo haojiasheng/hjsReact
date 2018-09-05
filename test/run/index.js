@@ -1,24 +1,107 @@
-import { Component,  h, render} from '../../src/hjsReact';
+import { Component, h, render } from '../../src/hjsReact';
 /** @jsx h */
 
-describe('ES6 spec', function() {
-  it('es6 arrows feature ', function() {
-    let v = () => {console.log(1);};
-    function A(props) {
-      console.log(props)
-      const { children, name } = props;
-      return <div id='a'>
-                <b>这是一个组件，它的名称是{name}</b>
-                {children}
-              </div>
+describe('ES6 spec', function () {
+  it('es6 arrows feature ', function () {
+    let v = () => { console.log(1); };
+    function Z() {
+      return <div>c</div>
     }
+    class A extends Component {
+      state = {
+        status: false
+      }
+      constructor() {
+        super();
+      }
+      render() {
+        const { status } = this.state;
+        const { num } = this.props;
+        return <div onClick={this.add} id='a'>
+          <div>props：{num}</div>
+          <a>1</a><br />
+          {status && <b>2</b>}<br />
+          {status && <p>5</p>}
+          <i>3</i><br />
+          {status && <div>4</div>}
+          {status && <p>5</p>}
+          {status && <Z status={status} />}
+        </div>
+      }
+      add = () => {
+        this.setState((preState) => {
+          return {
+            status: !preState.status
+          }
+        })
+      }
+      static getDerivedStateFromProps(props, state, context) {
+        console.group('getDerivedStateFromProps=================>');
+        console.log('argments', props, state, context);
 
-    class B extends Component {
-      render () {
-        return null;//FIXME:返回A组件就卡住
+        return {
+          StateFromProps: `stateNum: ${state.stateNum}`
+        }
+      }
+      componentWillMount(props, state, context) {
+        console.group('componentWillMount=================>');
+        console.log('this', this.props, this.state, context);
+        console.log('argments', props, state, context);
+      }
+      shouldComponentUpdate(props, state, context) {
+        console.group('shouldComponentUpdate=================>');
+        console.log('this', this.props, this.state, context);
+        console.log('argments', props, state, context);
+        return true
+      }
+      // componentWillReceiveProps (props, state, context) {
+      //     console.group('componentWillReceiveProps=================>');
+      //     console.log('this', this.props, this.state, context);
+      //     console.log('argments',props, state, context);
+      // }
+      // componentWillUpdate (props, state, context) {
+      //     console.group('componentWillUpdate=================>');
+      //     console.log('this', this.props, this.state, context);
+      //     console.log('argments',props, state, context);
+      // }
+      getSnapshotBeforeUpdate(props, state, context) {
+        console.group('getSnapshotBeforeUpdate=================>');
+        console.log('this', this.props, this.state, context);
+        console.log('argments', props, state, context);
+        return {}
+      }
+      componentDidUpdate(props, state, context) {
+        console.group('componentDidUpdate=================>');
+        console.log('this', this.props, this.state, context);
+        console.log('argments', props, state, context);
+      }
+      componentDidMount(props, state, context) {
+        console.group('componentDidMount=================>');
+        console.log('this', this.props, this.state, context);
+        console.log('argments', props, state, context, 'a:', this.a);
       }
     }
 
+    class B extends Component {
+      state = {
+        num: 0
+      }
+      render() {
+        const { num } = this.state;
+        return (
+          <div>
+            <div onClick={this.add}>增加</div>
+            <A num={num} />
+            <div>一些内容</div>
+          </div>
+        );
+      }
+      add = () => {
+        this.setState((preState) => ({
+          num: ++preState.num
+        }))
+      }
+    }
     const div = document.createElement('div');
     document.body.appendChild(div);
     render(<B />, div);
