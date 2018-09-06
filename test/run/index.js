@@ -19,6 +19,7 @@ describe('ES6 spec', function () {
         const { num } = this.props;
         return <div onClick={this.add} id='a'>
           <div>props：{num}</div>
+          <div onClick={this.update}>forceNum: {this.forceNum || (this.forceNum = 0)}</div>
           <a>1</a><br />
           {status && <b>2</b>}<br />
           {status && <p>5</p>}
@@ -30,10 +31,17 @@ describe('ES6 spec', function () {
       }
       add = () => {
         this.setState((preState) => {
+          console.log('add')
           return {
             status: !preState.status
           }
         })
+      }
+      update = (event) => {
+        console.log('forceUpdate')
+        this.forceNum = ++this.forceNum;
+        this.forceUpdate();
+        event.stopPropagation()
       }
       static getDerivedStateFromProps(props, state, context) {
         console.group('getDerivedStateFromProps=================>');
@@ -54,30 +62,32 @@ describe('ES6 spec', function () {
         console.log('argments', props, state, context);
         return true
       }
-      // componentWillReceiveProps (props, state, context) {
-      //     console.group('componentWillReceiveProps=================>');
-      //     console.log('this', this.props, this.state, context);
-      //     console.log('argments',props, state, context);
-      // }
-      // componentWillUpdate (props, state, context) {
-      //     console.group('componentWillUpdate=================>');
-      //     console.log('this', this.props, this.state, context);
-      //     console.log('argments',props, state, context);
-      // }
+      componentWillReceiveProps (props, state, context) {
+          console.group('componentWillReceiveProps=================>');
+          console.log('this', this.props, this.state, context);
+          console.log('argments',props, state, context);
+      }
+      componentWillUpdate (props, state, context) {
+          console.group('componentWillUpdate=================>');
+          console.log('this', this.props, this.state, context);
+          console.log('argments',props, state, context);
+      }
       getSnapshotBeforeUpdate(props, state, context) {
         console.group('getSnapshotBeforeUpdate=================>');
         console.log('this', this.props, this.state, context);
         console.log('argments', props, state, context);
-        return {}
+        return {
+          msg: 'getSnapshotBeforeUpdate传送数据'
+        }
       }
-      componentDidUpdate(props, state, context) {
+      componentDidUpdate(props, state, data) {
         console.group('componentDidUpdate=================>');
-        console.log('this', this.props, this.state, context);
-        console.log('argments', props, state, context);
+        console.log('this', this.props, this.state);
+        console.log('argments', props, state, data);
       }
       componentDidMount(props, state, context) {
         console.group('componentDidMount=================>');
-        console.log('this', this.props, this.state, context);
+        console.log('this', this.props, this.state);
         console.log('argments', props, state, context, 'a:', this.a);
       }
     }
