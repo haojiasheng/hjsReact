@@ -12,7 +12,6 @@ export function diff(vnode, dom, parentNode, mountAll, componetRef, context) {//
   ++diffLeval;
   const ret = idiff(vnode, dom, mountAll, componetRef, context);
   if (parentNode && parentNode !== ret.parentNode) {
-    console.log(ret)
     parentNode.appendChild(ret);
   }
   if (!--diffLeval) {
@@ -25,7 +24,6 @@ export function diff(vnode, dom, parentNode, mountAll, componetRef, context) {//
 
 function idiff(vnode, dom, mountAll, componetRef, context) {
   let out = dom;
-
   if (isBoolean(vnode) || vnode === null || vnode === undefined) {
     vnode = '';
   }
@@ -88,37 +86,36 @@ function idiff(vnode, dom, mountAll, componetRef, context) {
 
 }
 
-
 function diffAttributes(dom, preAttr, attr) {
   for (const name in preAttr) {
     if (preAttr.hasOwnProperty(name) && !attr[name]) {
-      setAttribute(dom, name, preAttr[name], undefined);
+      setAttribute(dom, name, preAttr[name], preAttr[name] = undefined);
     }
   }
 
   for (const name in attr) {
     if (attr.hasOwnProperty(name) && name !== 'innerHTML' && name !== 'children') {
-      setAttribute(dom, name, preAttr[name], attr[name]);
+      setAttribute(dom, name, preAttr[name], preAttr[name] = attr[name]);
     }
   }
 }
 
 function innerDiffNode(vnodeChild, dom, mountAll, componetRef, context) {
   let keyObj = {},
-    noKeyLen = 0,
-    domChilds = dom.childNodes || [],
-    noKeyObj = {},
-    min = 0,
-    child = null,
-    vnodeChildLen = vnodeChild.length;//用于循环vnodeChild计数
+      noKeyLen = 0,
+      domChilds = dom.childNodes || [],
+      noKeyObj = [],
+      min = 0,
+      child = null,
+      vnodeChildLen = vnodeChild.length;//用于循环vnodeChild计数
 
   for (const domChild of domChilds) {
     const props = domChild[ATTR_KEY];
-    const key = props[key] ? props[key] : domChild._component ? domChild._component.__key : null;
+    const key = props.key ? props.key : domChild._component ? domChild._component.__key : null;
     if (key) {
       keyObj[key] = domChild;
     } else {
-      noKeyObj[noKeyLen++] = children;
+      noKeyObj[noKeyLen++] = domChild;
     }
   }
 
@@ -134,8 +131,9 @@ function innerDiffNode(vnodeChild, dom, mountAll, componetRef, context) {
       }
     } else if (min < noKeyLen) {
       for (let j = min; j < noKeyLen; j++) {
-        if (isSameType(noKeyObj[j], vChild)) {
-          child = noKeyObj[j];
+        const c = noKeyObj[j];
+        if (c && isSameType(c, vChild)) {
+          child = c;
           delete noKeyObj[j];
           if (min === j) {
             min++;
@@ -143,25 +141,27 @@ function innerDiffNode(vnodeChild, dom, mountAll, componetRef, context) {
           if (j === noKeyLen) {
             noKeyLen--;
           }
+          break;
         }
       }
     }
 
     child = idiff(vChild, child, mountAll, componetRef, context)
-
-    const c = domChilds[i]
+    const c = domChilds[i];
     if (child && child !== c && child !== dom) {
       if (!c) {
         dom.appendChild(child);
       } else if (c.nextSibling === child) {
-        removeNode(c);//FIXME:这里可以不用删除c，个人认为将child放到c前面就可以了
+        removeNode(c);
       } else {
         dom.insertBefore(child, c);
       }
     }
-    handleObjectNode(keyObj);
-    handleObjectNode(noKeyObj);
   }
+  if(Object.keys(keyObj).length === 0 && Object.keys(noKeyObj).length === 0) {
+  }
+  handleObjectNode(keyObj);
+  handleObjectNode(noKeyObj);
 
 
 }
@@ -177,11 +177,10 @@ function createNode(nodeName) {
   return document.createElement(nodeName);
 }
 
-
 function isSameType(node, vnode) {
   if (isString(vnode) || isNumber(vnode)) {
     return node.splitText !== undefined;
-  } else if (isString(node.nodeName)) {
+  } else if (isString(vnode.nodeName)) {
     return !node._componentConstructor && isSameNode(node, vnode.nodeName);
   }
   return node._componentConstructor === vnode.nodeName;

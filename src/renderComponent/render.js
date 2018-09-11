@@ -11,9 +11,8 @@ export function render(vnode, parentNode, oldDom) {
 export function createComponent(Ctor, props, context) {
   let componentList = oldComponents[Ctor.name], inst;
 
-  if (isClass(Ctor) && (warning(Ctor.prototype.render, '组件必须要有render方法', 'TypeError'))) {
+  if (isClass(Ctor) && (warning(Ctor.prototype.render, `组件${Ctor.name}必须要有render方法`, 'TypeError')) && warning(Object.getPrototypeOf(Ctor.prototype).constructor === Component, `组件${Ctor.name}必须继承Component类`, 'TypeError')) {
     inst = new Ctor(props, context);
-    warning(inst instanceof Component, '必须继承Component类', 'TypeError');
   } else {
     inst = new Component(props, context);
     inst.constructor = Ctor;
@@ -32,8 +31,8 @@ export function createComponent(Ctor, props, context) {
   return inst;
 }
 
-function doRender(props) {
-  return this.constructor(props);
+function doRender(props, context) {
+  return this.constructor.call(undefined,props, context);
 }
 
 let items = [];
@@ -59,7 +58,7 @@ function reRender() {
   items = [];
   while (p = list.pop()) {
     const {props, state, component, context} = p;
-    if (p._dirty) {
+    if (component._dirty) {
       renderComponent(component, props, state, undefined, undefined, context);
     }
   }

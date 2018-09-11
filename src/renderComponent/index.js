@@ -41,12 +41,12 @@ export function setComponentProps(component, mode, mountAll,  props = {}, state,
   warning(!component._disable, `请勿运行已经卸载或者正在运行的组件${component.constructor.name}, 否则会造成内存泄漏`, 'reference');
   component._disable = true;
 
-  component.__ref = props.ref;
   component.__key = props.key;
+  component.newCycle = isFunction(component.constructor.getDerivedStateFromProps) || isFunction(component.getSnapshotBeforeUpdate);
   delete props.ref;
   delete props.key;
 
-  if (!isFunction(component.constructor.getDerivedStateFromProps)) {
+  if (!component.newCycle) {
     if (!component.base || mountAll) {
       if (component.componentWillMount) {
         component.componentWillMount();
@@ -63,13 +63,12 @@ export function setComponentProps(component, mode, mountAll,  props = {}, state,
   } else if (mode === ASYNC_MOUNT) {
     queueRender(component, props, state, context);
   }
-
-	if (component.__ref) component.__ref(component);//FIXME:这里还不知道有什么用处
 }
 
 
 
 export function renderComponent(component, props = {}, state = null, mode, mountAll, context) {
+  warning(!component._disable, `请勿运行已经卸载或者正在运行的组件${component.constructor.name}, 否则会造成内存泄漏`, 'reference');
   let preProps = component.props,
       preState = component.state,
       preContext = component.context,
@@ -83,29 +82,28 @@ export function renderComponent(component, props = {}, state = null, mode, mount
       inst,
       cbase;
 
-
   if (isFunction(component.constructor.getDerivedStateFromProps)) {
     getDerivedStateFromPropsData = component.constructor.getDerivedStateFromProps(props, state);
     state = Object.assign((state || {}),getDerivedStateFromPropsData);
   }
   
   if (isUpdate) {
-    if (mode !== FORCE_MOUNT && component.shouldComponentUpdate && component.shouldComponentUpdate(props, state)) {
+    if (mode !== FORCE_MOUNT && component.shouldComponentUpdate && !component.shouldComponentUpdate(props, state)) {
       skip = true;
-    } else if (!isFunction(component.constructor.getDerivedStateFromProps) && isFunction(component.componentWillUpdate)) {
+    } else if (!component.newCycle && isFunction(component.componentWillUpdate)) {
       component.componentWillUpdate(props, state)
     }
-
-    component.nextBase = null;
-    component.props = props;
-    component.state = state;
-    component.context = context;
   }
+  component.nextBase = null;
+  component.props = props;
+  component.state = state;
+  component.context = context;
 
   component._dirty = false;
   if (!skip) {
     rendered = component.render();
-    warning(rendered !== undefined, 'render函数必须返回一些内容或者false或者null');//FIXME:在运行之前就判断出是否继承了Component
+    warning(rendered !== undefined, 'render函数必须返回一些内容或者false或者null');
+
 
     if (isFunction(component.getChildContext)) {
       context = Object.assign({}, context, component.getChildContext())
@@ -143,14 +141,14 @@ export function renderComponent(component, props = {}, state = null, mode, mount
         if (cbase) {
           cbase._component = null;
         }
-        base = diff(rendered, cbase, cbase && cbase.parentNode, mountAll || !isUpdate, false, context)
+        base = diff(rendered, cbase, cbase && cbase.parentNode, mountAll || !isUpdate, false, context);
+        
       }
     }
 
     if (initBase && base !== initBase && inst !== initialChildComponent) {
       const initBaseParent = initBase.parentNode;
       if (initBaseParent && initBaseParent !== base) {
-        initBaseParent.replaceChild(base, initBase);
         if (!toUnmount) {
           handleNode(initBase);
         }
@@ -162,12 +160,12 @@ export function renderComponent(component, props = {}, state = null, mode, mount
     }
   
     component.base = base;
-    console.log(base)
+      
   
     if(base) {
       let componentRef = component,
           t = component;
-      while(t = component._parentComponent) {
+      while(t = t._parentComponent) {
         (componentRef = t).base = base;
       }
       base._component = componentRef;
@@ -177,10 +175,8 @@ export function renderComponent(component, props = {}, state = null, mode, mount
 
   if (!isUpdate || mountAll) {
     mounts.unshift(component);
-  } else if (!skip) {
-    if (isFunction(component.componentDidUpdate)) {
-      component.componentDidUpdate(preProps, preState, snapshot);
-    }
+  } else if (!skip && isFunction(component.componentDidUpdate)) {
+    component.componentDidUpdate(preProps, preState, snapshot);
   }
 
   let cbk;

@@ -4,7 +4,6 @@ export function setAttribute(dom, name, oldVal, val) {
     if(name === 'className') {
       name = 'class';
     };
-    console.log(name, val);
     if (name === 'ref') {
       if (oldVal) {
         oldVal(null);
@@ -33,6 +32,7 @@ export function setAttribute(dom, name, oldVal, val) {
       }
     } else if (name[0] === 'o' && name[1] === 'n') {
       const useCapture = name !== (name = name.replace(/Capture$/, ''));
+      name = name.slice(2).toLowerCase();
       if (val) {
           if (!oldVal) {
             dom.addEventListener(name, eventProxy, useCapture);
@@ -52,5 +52,5 @@ export function setAttribute(dom, name, oldVal, val) {
 
 
   function eventProxy (event) {
-      return event.target._listener[event.type](event);
+      return event.currentTarget._listener[event.type](event);
   }

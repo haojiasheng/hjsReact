@@ -36,9 +36,6 @@ export function removeComponent(component) {
     removeNode(base);
     removeChild(base);
   }
-  if (component.__ref) {
-    component.__ref(null);
-  }
 }
 
 //删除节点

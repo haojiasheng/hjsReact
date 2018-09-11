@@ -94,17 +94,36 @@ describe('ES6 spec', function () {
 
     class B extends Component {
       state = {
-        num: 0
+        num: 0,
+        email: false
       }
       render() {
-        const { num } = this.state;
+        const { num, email } = this.state;
         return (
           <div>
             <div onClick={this.add}>增加</div>
             <A num={num} />
             <div>一些内容</div>
+            {email && 
+            <div>
+              email: <input />
+            </div>}
+            {!email && 
+            <div>
+              name: <input />
+            </div>}
+            <button onClick={this.switch}>切换</button>
           </div>
         );
+      }
+      switch = () => {
+        this.setState({
+          email: !this.state.email
+        })
+        this.setState({
+          email: !this.state.email
+        })
+        console.log(this.state, '当前state');
       }
       add = () => {
         this.setState((preState) => ({

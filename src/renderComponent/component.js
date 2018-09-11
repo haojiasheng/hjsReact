@@ -1,6 +1,7 @@
 import { isObject, isFunction, warning } from '../utils';
-import { mounts } from '../data';
+import { mounts, FORCE_MOUNT } from '../data';
 import { queueRender } from './render';
+import { renderComponent } from '../renderComponent';
 
 export class Component {
   constructor (props, context) {
@@ -17,15 +18,16 @@ export class Component {
         return _dirty;
       }
     })
-    this.props = props;
-    this.context = context;
+    this.props = props || {};
+    this.context = context || {};
+    this.state = null;
     this.delayState = {};
     this.__rendercallBack = [];//用于存放当前实例用于在渲染完后调用的回调函数
   }
   render () {}
-  seState (state, callBack) {
+  setState (state, callBack) {
     let s = null;
-    warning(isObject(state) || isFunction(state), '调用setState方法，请传入函数或者对象！', 'type');
+    warning(isObject(state) || isFunction(state), `在${this.constructor.name}组件中调用setState方法时，请传入函数或者对象！`, 'type');
     if (isFunction(state)) {
       s = state(this.state, this.props);
       if (callBack) {
@@ -34,8 +36,11 @@ export class Component {
     } else {
       s = state;
     }
-    s = Object.assign((this.state || {}), s); 
+    s = Object.assign({}, this.state, s);
     queueRender(this, this.props, s, this.context);
+  }
+  forceUpdate () {
+    renderComponent(this, this.props, this.state, FORCE_MOUNT, false, this.context)
   }
 }
 
